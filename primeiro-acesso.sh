@@ -49,7 +49,7 @@ else
     [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -ge 1 ] && [ "$n" -le "${#repos[@]}" ] || { echo "   · $n: não é um número da lista"; continue; }
     repo="${repos[$((n - 1))]}"; destino="$HOME/Projetos/${repo##*/}"
     if [ -d "$destino/.git" ]; then echo "   ✓ $repo: já clonado em $destino"; continue; fi
-    gh repo clone "$repo" "$destino" -- -q && echo "   ✓ $repo → $destino"
+    gh repo clone "$repo" "$destino" -- -q && echo "   ✓ $repo → $destino" && { [ -f "$destino/mvnw" ] && chmod +x "$destino/mvnw"; true; }
   done
 fi
 

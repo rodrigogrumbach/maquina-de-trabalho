@@ -39,11 +39,15 @@ ok_se "Claude Code" "[ -x $CASA/.local/bin/claude ]" "$(versao "$CASA/.local/bin
 
 # depois do primeiro acesso (login da pessoa e os repositórios)
 if [ -f "$CASA/.maquina-primeiro-acesso" ]; then
-  ok_se "Login no GitHub" "sudo -n -u $USUARIO gh auth status || gh auth status"
-  # o projeto da compilação curta: escolhido no primeiro acesso (~/.maquina-compilar: a pasta e, na linha 2, os argumentos do mvnw)
+  # na conta da pessoa (o preparar.sh roda este relatório como root): o login e a compilação são dela
+  if [ "$(id -u)" -eq 0 ]; then como() { sudo -n -u "$USUARIO" -H "$@"; }; else como() { "$@"; }; fi
+  ok_se "Login no Claude" "como $CASA/.local/bin/claude auth status"
+  ok_se "Login no GitHub" "como gh auth status"
+  # o projeto da compilação curta: escolhido no primeiro acesso (~/.maquina-compilar: a pasta e, na linha 2, os argumentos do mvnw).
+  # O mvnw vem do Git muitas vezes sem a permissão de execução (repositório criado no Windows): roda com o sh, e basta existir.
   projeto="$(sed -n 1p "$CASA/.maquina-compilar" 2>/dev/null)"; args="$(sed -n 2p "$CASA/.maquina-compilar" 2>/dev/null)"
-  if [ -n "$projeto" ] && [ -x "$projeto/mvnw" ]; then
-    if (cd "$projeto" && timeout 900 ./mvnw -B -q -ntp ${args:--DskipTests compile}) >/tmp/maquina-compilacao.log 2>&1; then
+  if [ -n "$projeto" ] && [ -f "$projeto/mvnw" ]; then
+    if (cd "$projeto" && como timeout 900 sh ./mvnw -B -q -ntp ${args:--DskipTests compile}) >/tmp/maquina-compilacao.log 2>&1; then
       item OK "Compilação curta" "$(basename "$projeto") compila"
     else
       item FALTA "Compilação curta" "$(basename "$projeto"): veja /tmp/maquina-compilacao.log"
