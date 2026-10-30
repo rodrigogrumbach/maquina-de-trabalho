@@ -22,7 +22,7 @@ ok_se "Ubuntu" '. /etc/os-release && [ "$ID" = ubuntu ]' "$(. /etc/os-release; e
 ok_se "Fuso America/Sao_Paulo" '[ "$(timedatectl show -p Timezone --value 2>/dev/null || cat /etc/timezone)" = "${FUSO:-America/Sao_Paulo}" ]' "$(date '+%Z %z')"
 ok_se "Atualizações de segurança" 'grep -q "Unattended-Upgrade \"1\"" /etc/apt/apt.conf.d/20auto-upgrades' "unattended-upgrades"
 ok_se "Firewall ativo" 'ufw status 2>/dev/null | grep -q "Status: active" || sudo -n ufw status 2>/dev/null | grep -q "Status: active"' "só o SSH entra"
-ok_se "SSH só por chave" 'grep -q "^PasswordAuthentication no" /etc/ssh/sshd_config.d/10-brainstorming.conf' "" "senha do SSH ainda ligada (sem chave na máquina?)"
+ok_se "SSH só por chave" 'grep -q "^PasswordAuthentication no" /etc/ssh/sshd_config.d/10-brainstorming.conf' "" "senha do SSH ainda ligada: veja /var/log/maquina-de-trabalho.log"
 ok_se "fail2ban (SSH)" 'systemctl is-active --quiet fail2ban'
 ok_se "Usuário $USUARIO" "id $USUARIO" "" "não existe"
 ok_se "Pasta de trabalho" "[ -d $CASA/Projetos ] && [ \"\$(stat -c %a $CASA/Projetos)\" = 700 ]" "$CASA/Projetos (só a pessoa)"

@@ -62,8 +62,11 @@ KbdInteractiveAuthentication no
 PermitRootLogin prohibit-password
 PubkeyAuthentication yes
 EOF
+  # no Ubuntu 24.04 o ssh é ativado por socket: no primeiro boot o serviço ainda não rodou e o /run/sshd não existe, e sem ele o
+  # sshd -t falha ("Missing privilege separation directory") — achado na reinstalação da Bill, 30/10/2026
+  install -d -m 755 /run/sshd
   if sshd -t 2>>"$LOG"; then
-    systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
+    systemctl reload ssh 2>/dev/null || systemctl restart ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
   else
     rm -f /etc/ssh/sshd_config.d/10-brainstorming.conf
     passo "ATENÇÃO: a configuração do SSH não passou no sshd -t; ficou como estava."
