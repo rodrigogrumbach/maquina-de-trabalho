@@ -22,6 +22,9 @@ if [ -f "$AMB" ]; then
   v="$(sed -n 's#^CLONAR=\([A-Za-z0-9._/ -]\{1,400\}\)$#\1#p' "$AMB" | head -1)"; [ -z "${CLONAR:-}" ] && [ -n "$v" ] && export CLONAR="$v"
 fi
 
+# a etapa em que o roteiro está (uma palavra, sem segredo), para quem gerencia a máquina mostrar a dica do momento
+etapa() { mkdir -p "$HOME/.config/maquina-de-trabalho" && printf '%s\n' "$1" > "$HOME/.config/maquina-de-trabalho/etapa"; }
+
 echo ""
 echo "  Primeiro acesso à máquina de trabalho da Brainstorming"
 echo "  ------------------------------------------------------"
@@ -29,6 +32,7 @@ echo "  1. Claude e GitHub   2. Git   3. Repositórios   4. Passos dos projetos 
 echo ""
 
 # ---------------------------------------------------------------- 1. Claude e GitHub
+etapa claude
 if [ -x "$CLAUDE" ] && "$CLAUDE" auth status >/dev/null 2>&1; then
   echo "✓ 1. Claude: já entrou."
 else
@@ -38,6 +42,7 @@ fi
 
 # o GitHub por HTTPS, pelo navegador; o gh guarda a credencial dele (este roteiro não vê). O read:packages deixa o Maven ler pacotes
 # publicados no GitHub Packages.
+etapa github
 if gh auth status >/dev/null 2>&1; then
   echo "✓ 1. GitHub: já entrou."
 else
@@ -51,6 +56,7 @@ fi
 gh auth setup-git >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------------- 2. a identidade do Git (a que já existe fica)
+etapa git
 if [ -z "$(git config --global user.name 2>/dev/null)" ] || [ -z "$(git config --global user.email 2>/dev/null)" ]; then
   login="$(gh api user --jq .login 2>/dev/null)"; gid="$(gh api user --jq .id 2>/dev/null)"; nome="$(gh api user --jq '.name // .login' 2>/dev/null)"
   if [ -n "$login" ] && [ -n "$gid" ]; then
@@ -64,6 +70,7 @@ else
 fi
 
 # ---------------------------------------------------------------- 3. os repositórios
+etapa repositorios
 mkdir -p "$PROJETOS"; chmod 700 "$PROJETOS"
 clonar() {   # clonar <dono/nome>
   local destino="$PROJETOS/${1##*/}"
@@ -108,6 +115,7 @@ if [ "${#comMvnw[@]}" -gt 0 ] && [ ! -s "$HOME/.maquina-compilar" ]; then
 fi
 
 # ---------------------------------------------------------------- 4. os passos próprios dos projetos clonados
+etapa projetos
 achou=0
 for passo in "$PROJETOS"/*/instalacao/maquina-de-trabalho/no-primeiro-acesso.sh; do
   [ -f "$passo" ] || continue
@@ -118,9 +126,11 @@ for passo in "$PROJETOS"/*/instalacao/maquina-de-trabalho/no-primeiro-acesso.sh;
 done
 [ "$achou" = 1 ] || echo "· 4. Nenhum projeto clonado traz passos próprios."
 
+etapa conferir
 touch "$HOME/.maquina-primeiro-acesso"
 echo ""
 echo "→ 5. Conferindo (inclui a compilação curta, alguns minutos):"
 if sudo -n true 2>/dev/null; then sudo -n maquina-pronta; else maquina-pronta; fi || true   # como root: o relatório em /var/log é o que o OC lê
 echo ""
+etapa fim
 echo "Para trabalhar:  cd ~/Projetos/<projeto> && claude"
