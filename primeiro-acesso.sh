@@ -43,15 +43,26 @@ fi
 # o GitHub por HTTPS, pelo navegador; o gh guarda a credencial dele (este roteiro não vê). O read:packages deixa o Maven ler pacotes
 # publicados no GitHub Packages.
 etapa github
+# o código de uso único do GitHub (XXXX-XXXX) vai também para um arquivo da conta, enquanto o login está aberto, para quem gerencia a
+# máquina mostrá-lo com Copiar (não é segredo: vence em minutos e só autoriza esta máquina na conta de quem o digitar); apagado ao sair
+CODIGO_GH="$HOME/.config/maquina-de-trabalho/codigo-github"
+com_codigo() {   # com_codigo <comando do gh…>: roda mostrando tudo e guarda o código que aparecer
+  local log; log="$(mktemp)"; chmod 600 "$log"
+  ( umask 077; for _ in $(seq 1 600); do c="$(grep -oE '[A-Z0-9]{4}-[A-Z0-9]{4}' "$log" 2>/dev/null | tail -1)"; [ -n "$c" ] && { printf '%s\n' "$c" > "$CODIGO_GH"; chmod 600 "$CODIGO_GH"; break; }; sleep 1; done ) &
+  local vigia=$!
+  "$@" 2> >(tee -a "$log" >&2); local r=$?
+  kill "$vigia" 2>/dev/null; rm -f "$log" "$CODIGO_GH"
+  return $r
+}
 if gh auth status >/dev/null 2>&1; then
   echo "✓ 1. GitHub: já entrou."
 else
   echo "→ 1. Entrar no GitHub: escolha GitHub.com, HTTPS e o navegador (ou o código de uso único)."
-  gh auth login --hostname github.com --git-protocol https --web --scopes read:packages || { echo "  Não entrou no GitHub. Rode primeiro-acesso de novo."; exit 1; }
+  com_codigo gh auth login --hostname github.com --git-protocol https --web --scopes read:packages || { echo "  Não entrou no GitHub. Rode primeiro-acesso de novo."; exit 1; }
 fi
 if ! gh auth status 2>&1 | grep -q "read:packages"; then
   echo "→ 1. Falta ao GitHub a permissão de ler os pacotes (read:packages): o navegador pede a confirmação."
-  gh auth refresh --hostname github.com --scopes read:packages || echo "  · Sem o read:packages, projetos que leem pacotes do GitHub não compilam. Rode primeiro-acesso de novo."
+  com_codigo gh auth refresh --hostname github.com --scopes read:packages || echo "  · Sem o read:packages, projetos que leem pacotes do GitHub não compilam. Rode primeiro-acesso de novo."
 fi
 gh auth setup-git >/dev/null 2>&1 || true
 
@@ -102,9 +113,15 @@ else
   done
 fi
 
-# a compilação curta da conferência: um dos projetos clonados que tem o mvnw (a pessoa escolhe; fica em ~/.maquina-compilar)
+# a compilação curta da conferência: um dos projetos clonados que tem o mvnw (fica em ~/.maquina-compilar). Com CLONAR informado, sem
+# perguntar: o 1º de CLONAR que tem o mvnw (senão o 1º da pasta), com os argumentos padrão
 mapfile -t comMvnw < <(find "$PROJETOS" -mindepth 2 -maxdepth 2 -name mvnw -printf '%h\n' 2>/dev/null | sort)
-if [ "${#comMvnw[@]}" -gt 0 ] && [ ! -s "$HOME/.maquina-compilar" ]; then
+if [ "${#comMvnw[@]}" -gt 0 ] && [ ! -s "$HOME/.maquina-compilar" ] && [ -n "${CLONAR:-}" ]; then
+  escolhido=""
+  for r in $CLONAR; do [ -f "$PROJETOS/${r##*/}/mvnw" ] && { escolhido="$PROJETOS/${r##*/}"; break; }; done
+  printf '%s\n%s\n' "${escolhido:-${comMvnw[0]}}" "" > "$HOME/.maquina-compilar"
+  echo "✓ Compilação curta da conferência: $(basename "${escolhido:-${comMvnw[0]}}")"
+elif [ "${#comMvnw[@]}" -gt 0 ] && [ ! -s "$HOME/.maquina-compilar" ]; then
   echo "→ Projeto para a compilação curta da conferência:"
   for i in "${!comMvnw[@]}"; do printf '   %3d %s\n' "$((i + 1))" "${comMvnw[$i]}"; done
   read -r -p "   Qual? (número; Enter = o 1): " n; n="${n:-1}"
