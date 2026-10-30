@@ -14,6 +14,14 @@ set -uo pipefail
 CLAUDE="$HOME/.local/bin/claude"
 PROJETOS="$HOME/Projetos"
 
+# o MAQUINA e o CLONAR que a gestão da máquina deixou (~/.config/maquina-de-trabalho/ambiente), quando não vieram no comando. Só essas
+# duas linhas, conferidas (nada do arquivo é executado).
+AMB="$HOME/.config/maquina-de-trabalho/ambiente"
+if [ -f "$AMB" ]; then
+  v="$(sed -n 's/^MAQUINA=\([[:alnum:]._-]\{1,40\}\)$/\1/p' "$AMB" | head -1)"; [ -z "${MAQUINA:-}" ] && [ -n "$v" ] && export MAQUINA="$v"
+  v="$(sed -n 's#^CLONAR=\([A-Za-z0-9._/ -]\{1,400\}\)$#\1#p' "$AMB" | head -1)"; [ -z "${CLONAR:-}" ] && [ -n "$v" ] && export CLONAR="$v"
+fi
+
 echo ""
 echo "  Primeiro acesso à máquina de trabalho da Brainstorming"
 echo "  ------------------------------------------------------"
