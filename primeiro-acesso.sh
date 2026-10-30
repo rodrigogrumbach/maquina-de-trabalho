@@ -109,6 +109,6 @@ done
 touch "$HOME/.maquina-primeiro-acesso"
 echo ""
 echo "→ 5. Conferindo (inclui a compilação curta, alguns minutos):"
-maquina-pronta || true
+if sudo -n true 2>/dev/null; then sudo -n maquina-pronta; else maquina-pronta; fi || true   # como root: o relatório em /var/log é o que o OC lê
 echo ""
 echo "Para trabalhar:  cd ~/Projetos/<projeto> && claude"

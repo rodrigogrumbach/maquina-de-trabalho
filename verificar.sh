@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # O relatório "máquina pronta": o que o preparar.sh deixou e o que falta, item a item (OK, FALTA ou DEPOIS — este só depois do
 # primeiro acesso da pessoa). Só versões e situações: nenhuma senha, chave ou token. Grava também em /var/log/maquina-pronta.txt (root).
-# Uso: maquina-pronta   (ou bash verificar.sh). Sai com 0 quando nada FALTA.
+# Uso: maquina-pronta   (ou bash verificar.sh). Sai com 0 quando nada FALTA. RAPIDO=1: sem a compilação curta (a conferência pelo SSH).
 set -uo pipefail
 
 USUARIO="${USUARIO:-${SUDO_USER:-$(id -un)}}"
@@ -46,7 +46,9 @@ if [ -f "$CASA/.maquina-primeiro-acesso" ]; then
   # o projeto da compilação curta: escolhido no primeiro acesso (~/.maquina-compilar: a pasta e, na linha 2, os argumentos do mvnw).
   # O mvnw vem do Git muitas vezes sem a permissão de execução (repositório criado no Windows): roda com o sh, e basta existir.
   projeto="$(sed -n 1p "$CASA/.maquina-compilar" 2>/dev/null)"; args="$(sed -n 2p "$CASA/.maquina-compilar" 2>/dev/null)"
-  if [ -n "$projeto" ] && [ -f "$projeto/mvnw" ]; then
+  if [ "${RAPIDO:-0}" = 1 ]; then
+    item DEPOIS "Compilação curta" "não conferida no relatório rápido (rode maquina-pronta na máquina)"
+  elif [ -n "$projeto" ] && [ -f "$projeto/mvnw" ]; then
     if (cd "$projeto" && como timeout 900 sh ./mvnw -B -q -ntp ${args:--DskipTests compile}) >/tmp/maquina-compilacao.log 2>&1; then
       item OK "Compilação curta" "$(basename "$projeto") compila"
     else
