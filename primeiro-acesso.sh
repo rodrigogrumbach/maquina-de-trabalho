@@ -66,9 +66,13 @@ for r in ${CLONAR:-}; do
   [[ "$r" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]] || { echo "   · $r: não é dono/nome"; continue; }
   clonar "$r"
 done
-mapfile -t repos < <( { gh repo list --limit 200 --json nameWithOwner --jq '.[].nameWithOwner'
+# com CLONAR informado, a lista vem pronta: não pergunta (para clonar outro depois: gh repo clone dono/nome ~/Projetos/nome)
+repos=()
+[ -n "${CLONAR:-}" ] || mapfile -t repos < <( { gh repo list --limit 200 --json nameWithOwner --jq '.[].nameWithOwner'
                         for org in $(gh api user/orgs --jq '.[].login' 2>/dev/null); do gh repo list "$org" --limit 200 --json nameWithOwner --jq '.[].nameWithOwner'; done; } 2>/dev/null | sort -u)
-if [ "${#repos[@]}" -eq 0 ]; then
+if [ -n "${CLONAR:-}" ]; then
+  echo "✓ 3. Repositórios: os de CLONAR."
+elif [ "${#repos[@]}" -eq 0 ]; then
   echo "· 3. A sua conta do GitHub não enxerga nenhum repositório (ou a lista não veio). Clone depois com: gh repo clone dono/nome ~/Projetos/nome"
 else
   echo "→ 3. Repositórios que a sua conta enxerga:"
