@@ -154,6 +154,11 @@ if [ "${SEM_CLAUDE:-0}" != 1 ]; then
   fi
 fi
 
+# ---------------------------------------------------------------- serviços do usuário sem ninguém logado (EV-0141)
+# o linger: um serviço do usuário (o que um projeto liga no primeiro acesso) fica no ar sem login e volta sozinho depois de reiniciar.
+passo "Serviços do usuário sem login (linger)"
+loginctl enable-linger "$USUARIO" >>"$LOG" 2>&1 || passo "Aviso: o linger não ligou; o primeiro acesso tenta de novo."
+
 # ---------------------------------------------------------------- os roteiros do primeiro acesso e da conferência
 passo "Roteiros em $PASTA"
 install -d -m 755 "$PASTA"

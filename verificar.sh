@@ -55,11 +55,19 @@ if [ -f "$CASA/.maquina-primeiro-acesso" ]; then
   else
     item DEPOIS "Compilação curta" "nenhum projeto com mvnw escolhido no primeiro acesso"
   fi
+  # EV-0141: as credenciais do Maven só da pessoa, e as conferências próprias de cada projeto clonado (o arquivo
+  # instalacao/maquina-de-trabalho/na-verificacao.sh do projeto, rodado na conta da pessoa, escreve linhas "OK|FALTA|DEPOIS<tab>item<tab>detalhe")
+  [ -f "$CASA/.m2/settings.xml" ] && ok_se "Credenciais do Maven" "[ \"\$(stat -c %a $CASA/.m2/settings.xml)\" = 600 ]" "só a pessoa lê (600)" "o settings.xml tem de ter a permissão 600"
+  for conf in "$CASA"/Projetos/*/instalacao/maquina-de-trabalho/na-verificacao.sh; do
+    [ -f "$conf" ] || continue
+    while IFS=$'\t' read -r s o d; do
+      case "$s" in OK|FALTA|DEPOIS) item "$s" "$o" "$d";; esac
+    done < <(como env XDG_RUNTIME_DIR="/run/user/$(id -u "$USUARIO")" bash "$conf" 2>/dev/null)
+  done
 else
   item DEPOIS "Login no Claude e no GitHub" "a pessoa faz no primeiro acesso (primeiro-acesso)"
   item DEPOIS "Compilação curta" "depois do primeiro acesso"
 fi
-item DEPOIS "Pareamento com o OC" "vem com a etapa 2 (agente); ainda desligado"
 
 relatorio="Máquina de trabalho · $(hostname) · $(date '+%d/%m/%Y %H:%M')"$'\n'"$saida"
 if [ "$falta" -eq 0 ]; then relatorio+="RESULTADO: máquina pronta"$'\n'; else relatorio+="RESULTADO: faltam $falta item(ns)"$'\n'; fi

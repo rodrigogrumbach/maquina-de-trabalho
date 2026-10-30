@@ -10,7 +10,8 @@ Roteiros que preparam um Ubuntu 24.04 LTS recém-criado para trabalhar com o Cla
 
 - `preparar.sh` — instala e configura. Idempotente: rodar de novo só confere e completa. Uso: `sudo bash preparar.sh`.
 - `verificar.sh` — o relatório "máquina pronta" (comando `maquina-pronta`).
-- `primeiro-acesso.sh` — o primeiro acesso guiado (comando `primeiro-acesso`): entrar no Claude e no GitHub, escolher quais repositórios
-  clonar entre os que a sua conta enxerga, e conferir.
+- `primeiro-acesso.sh` — o primeiro acesso guiado (comando `primeiro-acesso`): entrar no Claude e no GitHub (com a leitura dos
+  pacotes), a identidade do Git, clonar os repositórios (os de `CLONAR` e os escolhidos entre os que a sua conta enxerga), rodar os
+  passos próprios que cada projeto clonado trouxer (`instalacao/maquina-de-trabalho/no-primeiro-acesso.sh`) e conferir.
 
 Numa VPS, o cloud-init baixa estes arquivos num commit fixo e confere o SHA-256 de cada um antes de rodar.
